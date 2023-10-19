@@ -3,6 +3,16 @@ from django.db import models
 from users.models import User
 
 
+class Tag():
+    """Класс для тегов."""
+    pass
+
+
+class Ingridient():
+    """Класс для ингридиентов."""
+    pass
+
+
 class Recipe(models.Model):
     """Класс для рецептов."""
     author = models.ForeignKey(
@@ -14,17 +24,16 @@ class Recipe(models.Model):
     image = models.ImageField(
         upload_to=
     )
-    text
-    ingridients
-    tags
-    cooking_time
+    text = models.CharField(
 
+    )
+    ingridients = models.ManyToManyField(
+        Ingridient,
 
-class Tag():
-    """Класс для тегов."""
-    pass
+    )
+    tags = models.ManyToManyField(
+        Tag,
 
+    )
+    cooking_time = 
 
-class Ingridient():
-    """Класс для ингридиентов."""
-    pass
