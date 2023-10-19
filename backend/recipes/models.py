@@ -18,7 +18,7 @@ class Tag():
     )
 
 
-class Ingridient():
+class Ingredient():
     """Класс для ингридиентов."""
     name = models.CharField(
         max_length=200,
@@ -28,6 +28,12 @@ class Ingridient():
         max_length=200,
         verbose_name='Единицы измерения'
     )
+
+    class Meta:
+        ordering = ('name',)
+
+    def __str__(self):
+        return self.name
 
 
 class Recipe(models.Model):
@@ -49,11 +55,11 @@ class Recipe(models.Model):
     text = models.CharField(
         verbose_name='Описание',
     )
-    ingridients = models.ManyToManyField(
-        Ingridient,
+    ingredients = models.ManyToManyField(
+        Ingredient,
         verbose_name='Список ингредиентов',
         related_name='recipes',
-        through='RecipeIngridients'
+        through='RecipeIngredients'
     )
     tags = models.ManyToManyField(
         Tag,
@@ -67,14 +73,14 @@ class Recipe(models.Model):
     )
 
 
-class RecipeIngridient(models.Model):
+class RecipeIngredient(models.Model):
     recipes = models.ForeignKey(
         Recipe,
         verbose_name='Рецепты',
         on_delete=models.CASCADE
     )
-    ingridients = models.ForeignKey(
-        Ingridient,
+    ingredients = models.ForeignKey(
+        Ingredient,
         verbose_name='Ингридиенты',
         on_delete=models.CASCADE
     )
