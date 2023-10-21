@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from recipes.models import Ingredient
+from recipes.models import Ingredient, Recipe, Tag
 from users.models import User
 
 
@@ -30,8 +30,24 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_is_subscribed(self, obj):
-        # TODO логика
-        return False
+        request = self.context.get('request')
+        user = request.user
+        if not request or user.is_anonymous:
+            return False
+        return obj.following.filter(user=user, following=obj).exists()
+
+
+class TagSerializer(serializers.ModelSerializer):
+    """Сериализация тегов """
+
+    class Meta:
+        model = Tag
+        fields = (
+            'id',
+            'name',
+            'color',
+            'slug',
+        )
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -43,4 +59,14 @@ class IngredientSerializer(serializers.ModelSerializer):
             'id',
             'name',
             'measurement_unit',
+        )
+
+
+class RecipeListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'tags'
         )
