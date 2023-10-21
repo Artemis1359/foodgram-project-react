@@ -11,3 +11,15 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (AllowAny,)
     serializer_class = IngredientSerializer
     # filter_backends = [IngredientSearchFilter]
+
+
+class RecipeViewSet(viewsets.ModelViewSet):
+    ...
+
+    # def get_serializer_class(self):
+    #     if self.action in ('list', 'retrieve'):
+    #         return RecipeListSerializer
+    #     return RecipeSerializer
+
+
+class FollowListView(viewsets.)
