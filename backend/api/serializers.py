@@ -148,3 +148,8 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
         # Дописать !!!
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    """Сериализатор данных для модели Follow."""
+    pass
