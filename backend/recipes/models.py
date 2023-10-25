@@ -4,7 +4,7 @@ from django.db import models
 from users.models import User
 
 
-class Tag():
+class Tag(models.Model):
     """Класс для тегов."""
     name = models.CharField(
         verbose_name='Название'
@@ -23,14 +23,14 @@ class Tag():
 
     class Meta:
         ordering = ('id',)
-        verbose_name = 'Тег',
+        verbose_name = 'Тег'
         verbose_name_plural = 'Теги'
 
     def __str__(self):
         return self.name
 
 
-class Ingredient():
+class Ingredient(models.Model):
     """Класс для ингредиентов."""
     name = models.CharField(
         max_length=200,
@@ -43,7 +43,7 @@ class Ingredient():
 
     class Meta:
         ordering = ('name',)
-        verbose_name = 'Ингредиент',
+        verbose_name = 'Ингредиент'
         verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
@@ -73,7 +73,7 @@ class Recipe(models.Model):
         Ingredient,
         verbose_name='Список ингредиентов',
         related_name='recipes',
-        through='RecipeIngredients'
+        through='RecipeIngredient'
     )
     tags = models.ManyToManyField(
         Tag,
@@ -91,7 +91,7 @@ class Recipe(models.Model):
 
     class Meta:
         ordering = ('-id',)
-        verbose_name = 'Рецепт',
+        verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
     def __str__(self):
@@ -120,8 +120,8 @@ class RecipeIngredient(models.Model):
     )
 
     class Meta:
-        ordering = ('id'),
-        verbose_name = 'Ингредиент в рецепте',
+        ordering = ('id',)
+        verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Игредиенты в рецептах'
         constraints = [
             models.UniqueConstraint(

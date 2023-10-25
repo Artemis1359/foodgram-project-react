@@ -1,0 +1,21 @@
+version: '3'
+
+volumes:
+  foodgram_pg_data:
+
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    volumes:
+      - foodgram_pg_data:/var/lib/postgresql/data
+  backend:
+    build: ./backend/
+    env_file: .env
+  frontend:
+    env_file: .env
+    build: ./frontend/
+  nginx:
+    build: ./nginx/
+    ports:
+      - 8000:80 
