@@ -1,19 +1,22 @@
+from django.shortcuts import get_object_or_404
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
-from users.models import User
+from users.models import Follow, User
 
 
-class UserCreateSerializer(serializers.ModelSerializer):
+class UserCreateSerializer(UserCreateSerializer):
     """Сериализация данных для создания пользователя."""
 
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name',
-                  'email')
+                  'email', 'password')
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(UserSerializer):
     """Сериализация данных для получения пользователя."""
 
     is_subscribed = serializers.SerializerMethodField()
@@ -98,7 +101,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'tags',
-            'author'
+            'author',
             'ingredients',
             'is_favorited',
             'is_in_shopping_cart',
@@ -150,9 +153,62 @@ class RecipeSerializer(serializers.ModelSerializer):
             'image',
             'name',
             'text',
-            'cooking_time'
+            'cooking_time',
+            'author'
         )
-        # Дописать !!!
+
+    def validate(self, data):
+        tags = data.get('tags')
+        ingredients = data.get('ingredients')
+        ingredients_list = []
+        for item in ingredients:
+            ingredient = get_object_or_404(Ingredient, id=item['id'])
+            if int(item['amount']) <= 0:
+                raise ValidationError(
+                    'Количество ингредиента не может быть меньше 1!')
+            ingredients_list.append(ingredient)
+        if len(ingredients_list) > len(set(ingredients_list)):
+            raise ValidationError('Ингредиенты не могут повторяться!')
+        if len(tags) > len(set(tags)):
+            raise ValidationError('Теги не могут повторяться!')
+
+    def ingredient_amount(self, recipe, ingredients):
+        RecipeIngredient.objects.bulk_create(
+            RecipeIngredient(
+                Ingredient=get_object_or_404(
+                    Ingredient,
+                    id=ingredient['id']),
+                recipe=recipe,
+                amount=ingredient['amount']
+            )
+            for ingredient in ingredients
+        )
+
+    def create(self, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        image = validated_data.pop('image')
+        recipe = Recipe.objects.create(
+            image=image,
+            **validated_data)
+        recipe.tags.set(tags)
+        self.ingredient_amount(recipe, ingredients)
+        return recipe
+
+    def update(self, instance, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        super().update(instance, validated_data)
+        instance.tags.clear()
+        instance.tags.set(tags)
+        instance.ingredients.clear()
+        RecipeIngredient.objects.filter(recipe=instance).delete()
+        self.ingredient_amount(instance, ingredients)
+        return instance
+
+    def to_representation(self, instance):
+        return RecipeListSerializer(instance,
+                                    context=self.context).data
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
@@ -174,7 +230,29 @@ class FollowSerializer(serializers.ModelSerializer):
     pass
 
     class Meta:
-        pass
+        model = Follow
+        fields = (
+            'user',
+            'following'
+        )
+        validators = (serializers.UniqueTogetherValidator(
+            queryset=Follow.objects.all(),
+            fields=('user', 'following'),
+            message='Подписка уже осуществлена',
+            ),
+        )
+
+    def validate_user(self, value):
+        user = self.context['request'].user
+        if value == user:
+            raise serializers.ValidationError(
+                'Нельзя отправить запрос самому себе'
+            )
+        return value
+
+    def to_representation(self, instance):
+        return FollowListSerializer(instance.following,
+                                    context=self.context).data
 
 
 class FollowListSerializer(serializers.ModelSerializer):

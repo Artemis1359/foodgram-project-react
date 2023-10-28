@@ -6,12 +6,12 @@ from django.db import models
 class User(AbstractUser):
     """Класс для пользователей."""
 
-    # USERNAME_FIELD = 'email'
-    # REQUIRED_FIELDS = [
-    #     'username',                  Проверить, работает ли без этого
-    #     'first_name',
-    #     'last_name',
-    # ]
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = [
+        'username',
+        'first_name',
+        'last_name',
+    ]
 
     username = models.CharField(
         verbose_name='Уникальный юзернейм',

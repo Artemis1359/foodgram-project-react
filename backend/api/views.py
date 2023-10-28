@@ -4,12 +4,13 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from djoser.views import UserViewSet
+from .pagination import LimitPageNumberPagination
 
 from users.models import Follow, User
 
 
 from .serializers import FollowListSerializer, FollowSerializer, IngredientSerializer, RecipeListSerializer, RecipeSerializer, RecipeShortSerializer, TagSerializer
-from recipes.models import Ingredient, Recipe, Tag
+from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -34,6 +35,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
+    pagination_class = LimitPageNumberPagination
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -43,20 +45,59 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return RecipeListSerializer
         return RecipeSerializer
 
+# Убрать дублирование кода!!!
     @action(
         methods=('post', 'delete'),
         detail=True,
         permission_classes=(IsAuthenticated,))
-    def shopping_cart(self, request, id):
-        recipe = get_object_or_404(Recipe, id=id)
+    def shopping_cart(self, request, pk):
+        recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
             serializer = RecipeShortSerializer(recipe)
-            if serializer.is_valid():
-                serializer.save(user=self.request.user,
-                                recipe=recipe)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=self.request.user,
+                            recipe=recipe)
             return Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED
+                )
+        obj = ShoppingCart.objects.filter(
+            user=request.user,
+            recipe=recipe
+        )
+        if obj.exists():
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+                    {'errors': 'Рецепт уже удален!'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+    @action(
+        methods=('post', 'delete'),
+        detail=True,
+        permission_classes=(IsAuthenticated,))
+    def favorite(self, request, id):
+        recipe = get_object_or_404(Recipe, id=id)
+        if request.method == 'POST':
+            serializer = RecipeShortSerializer(recipe)
+            serializer.is_valid(raise_exception=True)
+            serializer.save(user=self.request.user,
+                            recipe=recipe)
+            return Response(
+                    serializer.data,
+                    status=status.HTTP_201_CREATED
+                )
+        obj = Favorite.objects.filter(
+            user=request.user,
+            recipe=recipe
+        )
+        if obj.exists():
+            obj.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(
+                    {'errors': 'Рецепт уже удален!'},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
 
     @action(
@@ -68,6 +109,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class FollowViewSet(UserViewSet):
     """Вьюсет для класса Follow."""
+
+    pagination_class = LimitPageNumberPagination
 
     @action(
         methods=('post', 'delete'),

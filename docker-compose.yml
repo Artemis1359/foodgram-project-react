@@ -2,6 +2,7 @@ version: '3'
 
 volumes:
   foodgram_pg_data:
+  static:
 
 services:
   db:
@@ -12,10 +13,17 @@ services:
   backend:
     build: ./backend/
     env_file: .env
+    volumes:
+      - static:/backend_static
   frontend:
     env_file: .env
     build: ./frontend/
+    command: cp -r /app/build/. /frontend_static/
+    volumes:
+      - static:/frontend_static
   nginx:
     build: ./nginx/
+    volumes:
+      - static:/staticfiles/
     ports:
       - 8000:80 

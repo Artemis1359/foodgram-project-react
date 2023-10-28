@@ -165,7 +165,7 @@ class Favorite(models.Model):
         return f'{self.user} добавил {self.recipe} в Избранное'
 
 
-class ShopingCart(models.Model):
+class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         verbose_name='Пользователь',
