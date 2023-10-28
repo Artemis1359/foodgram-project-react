@@ -227,7 +227,6 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 
 class FollowSerializer(serializers.ModelSerializer):
     """Сериализатор данных для модели Follow."""
-    pass
 
     class Meta:
         model = Follow
@@ -242,7 +241,7 @@ class FollowSerializer(serializers.ModelSerializer):
             ),
         )
 
-    def validate_user(self, value):
+    def validate_following(self, value):
         user = self.context['request'].user
         if value == user:
             raise serializers.ValidationError(
@@ -250,16 +249,13 @@ class FollowSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def to_representation(self, instance):
-        return FollowListSerializer(instance.following,
-                                    context=self.context).data
-
 
 class FollowListSerializer(serializers.ModelSerializer):
     """Сериализатор данных для отображения списка модели Follow."""
 
-    recipes = serializers.SerializerMethodField
-    recipes_count = serializers.SerializerMethodField
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
+    is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -274,10 +270,18 @@ class FollowListSerializer(serializers.ModelSerializer):
             'recipes_count'
         )
 
+    def get_is_subscribed(self, obj):
+        request = self.context.get('request')
+        user = request.user
+        if user.is_anonymous:
+            return False
+        return obj.following.filter(user=user, following=obj).exists()
+
     def get_recipes(self, obj):
         recipes_limit = self.context.get('recipes_limit')
         if recipes_limit:
-            recipes = obj.recipes.all()[:int(recipes_limit)]
+            recipes_limit = int(recipes_limit)
+        recipes = obj.recipes.all()[:recipes_limit]
         return RecipeShortSerializer(recipes, many=True).data
 
     def get_recipes_count(self, obj):

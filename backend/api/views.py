@@ -1,8 +1,8 @@
 from django.shortcuts import get_object_or_404
-from requests import Response
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from djoser.views import UserViewSet
 from .pagination import LimitPageNumberPagination
 
@@ -53,10 +53,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def shopping_cart(self, request, pk):
         recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
+            ShoppingCart.objects.create(
+                user=self.request.user,
+                recipe=recipe)
             serializer = RecipeShortSerializer(recipe)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(user=self.request.user,
-                            recipe=recipe)
             return Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED
@@ -77,13 +77,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
         methods=('post', 'delete'),
         detail=True,
         permission_classes=(IsAuthenticated,))
-    def favorite(self, request, id):
-        recipe = get_object_or_404(Recipe, id=id)
+    def favorite(self, request, pk):
+        recipe = get_object_or_404(Recipe, id=pk)
         if request.method == 'POST':
+            Favorite.objects.create(
+                user=self.request.user,
+                recipe=recipe)
             serializer = RecipeShortSerializer(recipe)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(user=self.request.user,
-                            recipe=recipe)
             return Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED
@@ -120,17 +120,18 @@ class FollowViewSet(UserViewSet):
         user = self.request.user
         following = get_object_or_404(User, id=id)
         if request.method == 'POST':
-            serializer = FollowSerializer(following, data=request.data)
-            if serializer.is_valid():
-                serializer.save(user=user, following=following)
-                return Response(
+            serializer = FollowSerializer(data={
+                'user': user.id,
+                'following': following.id
+                },
+                context={'request': request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(
                     serializer.data,
                     status=status.HTTP_201_CREATED
                 )
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
         subscription = get_object_or_404(Follow,
                                          user=user,
                                          following=following)
@@ -138,12 +139,12 @@ class FollowViewSet(UserViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        methods=('get'),
         detail=False,
         permission_classes=(IsAuthenticated,)
     )
     def subscriptions(self, request):
         queryset = User.objects.filter(following__user=request.user)
         page = self.paginate_queryset(queryset)
-        serializer = FollowListSerializer(page, many=True)
+        serializer = FollowListSerializer(
+            page, many=True, context={'request': request})
         return self.get_paginated_response(serializer.data)
