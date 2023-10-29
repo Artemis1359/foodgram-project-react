@@ -1,5 +1,6 @@
 from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -93,6 +94,7 @@ class RecipeListSerializer(serializers.ModelSerializer):
         source='recipe_ingredients',
         read_only=True
     )
+    image = Base64ImageField()
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
 
@@ -139,11 +141,13 @@ class CreateRecipeIngredientSerializer(serializers.ModelSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     """Сериализатор данных для создания рецептов."""
+    author = UserSerializer(read_only=True)
     ingredients = CreateRecipeIngredientSerializer(many=True)
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True
     )
+    image = Base64ImageField()
 
     class Meta:
         model = Recipe
@@ -171,11 +175,12 @@ class RecipeSerializer(serializers.ModelSerializer):
             raise ValidationError('Ингредиенты не могут повторяться!')
         if len(tags) > len(set(tags)):
             raise ValidationError('Теги не могут повторяться!')
+        return data
 
     def ingredient_amount(self, recipe, ingredients):
         RecipeIngredient.objects.bulk_create(
             RecipeIngredient(
-                Ingredient=get_object_or_404(
+                ingredient=get_object_or_404(
                     Ingredient,
                     id=ingredient['id']),
                 recipe=recipe,
