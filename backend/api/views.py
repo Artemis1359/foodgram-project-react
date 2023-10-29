@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -6,6 +7,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from djoser.views import UserViewSet
 
+from .download_txt import create_txt
+
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import LimitPageNumberPagination
 
@@ -13,7 +16,7 @@ from users.models import Follow, User
 
 
 from .serializers import FollowListSerializer, FollowSerializer, IngredientSerializer, RecipeListSerializer, RecipeSerializer, RecipeShortSerializer, TagSerializer
-from recipes.models import Favorite, Ingredient, Recipe, ShoppingCart, Tag
+from recipes.models import Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -110,7 +113,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=False,
         permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request):
-        pass
+        shopping_cart = (
+            RecipeIngredient.objects.filter(
+                recipe__shopping_carts__user=request.user
+            ).values(
+                'ingredient__name',
+                'ingredient__measurement_unit',
+            ).order_by(
+                'ingredient__name'
+                ).annotate(amount=Sum('amount'))
+        )
+        return create_txt(shopping_cart)
 
 
 class FollowViewSet(UserViewSet):
@@ -151,6 +164,9 @@ class FollowViewSet(UserViewSet):
     def subscriptions(self, request):
         queryset = User.objects.filter(following__user=request.user)
         page = self.paginate_queryset(queryset)
+        recipes_limit = request.query_params['recipes_limit']
         serializer = FollowListSerializer(
-            page, many=True, context={'request': request})
+            page, many=True,
+            context={'request': request,
+                     'recipes_limit': recipes_limit})
         return self.get_paginated_response(serializer.data)

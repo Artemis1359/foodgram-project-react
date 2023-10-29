@@ -14,7 +14,7 @@ class UserCreateSerializer(UserCreateSerializer):
     class Meta:
         model = User
         fields = ('username', 'first_name', 'last_name',
-                  'email', 'password')
+                  'email', 'password', 'id')
 
 
 class UserSerializer(UserSerializer):
@@ -164,6 +164,10 @@ class RecipeSerializer(serializers.ModelSerializer):
     def validate(self, data):
         tags = data.get('tags')
         ingredients = data.get('ingredients')
+        if not ingredients:
+            raise ValidationError('Нужен хотя бы 1 ингредиент')
+        if not tags:
+            raise ValidationError('Нужен хотя бы 1 тег')
         ingredients_list = []
         for item in ingredients:
             ingredient = get_object_or_404(Ingredient, id=item['id'])
