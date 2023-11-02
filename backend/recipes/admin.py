@@ -31,14 +31,15 @@ class RecipeAdmin(admin.ModelAdmin):
                     'name',
                     'image',
                     'text',
-                    'cooking_time',)
+                    'added_in_favorites',)
     search_fields = ('author',
-                     'name',
-                     'cooking_time',)
+                     'name',)
     list_filter = ('author',
-                   'name',
-                   'cooking_time',)
+                   'name',)
     empty_value_display = '-пусто-'
+
+    def added_in_favorites(self, obj):
+        return obj.favorites.count()
 
 
 class RecipeIngredientAdmin(admin.ModelAdmin):

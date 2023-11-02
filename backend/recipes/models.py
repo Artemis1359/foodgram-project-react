@@ -154,6 +154,7 @@ class Favorite(models.Model):
     class Meta:
         ordering = ('id',)
         verbose_name = 'Избранное'
+        verbose_name_plural = 'Избранное'
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'recipe'),
@@ -182,6 +183,7 @@ class ShoppingCart(models.Model):
     class Meta:
         ordering = ('id',)
         verbose_name = 'Корзина'
+        verbose_name_plural = 'Корзина'
         constraints = [
             models.UniqueConstraint(
                 fields=('user', 'recipe'),

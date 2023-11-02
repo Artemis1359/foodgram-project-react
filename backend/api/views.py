@@ -75,7 +75,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
         detail=True)
     def shopping_cart(self, request, pk):
         if request.method == 'POST':
-            return self.add_to(ShoppingCart, ShoppingCartSerializer, request, pk)
+            return self.add_to(
+                ShoppingCart,
+                ShoppingCartSerializer,
+                request, pk)
         return self.delete_from(ShoppingCart, request, pk)
 
     @action(
