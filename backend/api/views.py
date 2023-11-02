@@ -1,41 +1,25 @@
 from django.db.models import Sum
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from djoser.views import UserViewSet
 
 from api.permissions import IsAdminOrAuthorOrReadOnly
-
-from .download_txt import create_txt
-
-from .filters import IngredientFilter, RecipeFilter
-from .pagination import LimitPageNumberPagination
-
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Follow, User
 
-
-from .serializers import (
-    FavoriteSerializer,
-    FollowListSerializer,
-    FollowSerializer,
-    IngredientSerializer,
-    RecipeListSerializer,
-    RecipeSerializer,
-    RecipeShortSerializer,
-    ShoppingCartSerializer,
-    TagSerializer
-)
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    Recipe,
-    RecipeIngredient,
-    ShoppingCart,
-    Tag
-)
+from .download_txt import create_txt
+from .filters import IngredientFilter, RecipeFilter
+from .pagination import LimitPageNumberPagination
+from .serializers import (FavoriteSerializer, FollowListSerializer,
+                          FollowSerializer, IngredientSerializer,
+                          RecipeListSerializer, RecipeSerializer,
+                          RecipeShortSerializer, ShoppingCartSerializer,
+                          TagSerializer)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
@@ -106,9 +90,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe=recipe)
         serializer_model = RecipeShortSerializer(recipe)
         return Response(
-                serializer_model.data,
-                status=status.HTTP_201_CREATED
-            )
+            serializer_model.data,
+            status=status.HTTP_201_CREATED
+        )
 
     def delete_from(self, model, request, pk):
         recipe = get_object_or_404(Recipe, id=pk)
@@ -136,7 +120,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'ingredient__measurement_unit',
             ).order_by(
                 'ingredient__name'
-                ).annotate(amount=Sum('amount'))
+            ).annotate(amount=Sum('amount'))
         )
         return create_txt(shopping_cart)
 
@@ -157,15 +141,15 @@ class FollowViewSet(UserViewSet):
             serializer = FollowSerializer(data={
                 'user': user.id,
                 'following': following.id
-                },
+            },
                 context={'request': request}
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(
-                    serializer.data,
-                    status=status.HTTP_201_CREATED
-                )
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
         subscription = get_object_or_404(Follow,
                                          user=user,
                                          following=following)
