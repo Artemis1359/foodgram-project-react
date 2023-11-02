@@ -4,7 +4,7 @@ from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
+from recipes.models import Favorite, Ingredient, Recipe, RecipeIngredient, ShoppingCart, Tag
 from users.models import Follow, User
 
 
@@ -15,6 +15,13 @@ class UserCreateSerializer(UserCreateSerializer):
         model = User
         fields = ('username', 'first_name', 'last_name',
                   'email', 'password', 'id')
+
+    def validate_username(self, value):
+        if value.lower == 'me':
+            raise ValidationError(
+                'Пользователя с username "me" нельзя создавать'
+            )
+        return value
 
 
 class UserSerializer(UserSerializer):
@@ -196,9 +203,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-        image = validated_data.pop('image')
         recipe = Recipe.objects.create(
-            image=image,
             **validated_data)
         recipe.tags.set(tags)
         self.ingredient_amount(recipe, ingredients)
@@ -222,7 +227,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 class RecipeShortSerializer(serializers.ModelSerializer):
     """Сериализатор данных для отображения
-     коротких рецептов в FollowListSerializer."""
+     коротких рецептов."""
 
     class Meta:
         model = Recipe
@@ -257,6 +262,10 @@ class FollowSerializer(serializers.ModelSerializer):
                 'Нельзя отправить запрос самому себе'
             )
         return value
+
+    def to_representation(self, instance):
+        return FollowListSerializer(instance.following,
+                                    context=self.context).data
 
 
 class FollowListSerializer(serializers.ModelSerializer):
@@ -295,3 +304,17 @@ class FollowListSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return obj.recipes.count()
+
+
+class FavoriteSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
