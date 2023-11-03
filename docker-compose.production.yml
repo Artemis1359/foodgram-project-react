@@ -23,13 +23,13 @@ services:
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static_volume:/frontend_static
-  gateway:
+  nginx:
     image: artemis1359/nginx
     env_file: .env
     depends_on:
       - backend
     volumes:
       - static_volume:/staticfiles/
-      - media:/app/media
+      - media_volume:/app/media
     ports:
       - 8000:80
