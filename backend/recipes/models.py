@@ -1,4 +1,8 @@
-from django.core.validators import MinValueValidator, RegexValidator
+from colorfield.fields import ColorField
+from django.core.validators import (
+    MaxValueValidator,
+    MinValueValidator,
+    RegexValidator)
 from django.db import models
 
 from users.models import User
@@ -9,7 +13,7 @@ class Tag(models.Model):
     name = models.CharField(
         verbose_name='Название'
     )
-    color = models.CharField(
+    color = ColorField(
         verbose_name='Цвет в HEX',
         max_length=16
     )
@@ -85,7 +89,8 @@ class Recipe(models.Model):
         default=1,
         verbose_name='Время приготовления (в минутах)',
         validators=[
-            MinValueValidator(1)
+            MinValueValidator(1),
+            MaxValueValidator(3600)
         ]
     )
 
@@ -115,12 +120,13 @@ class RecipeIngredient(models.Model):
         default=1,
         verbose_name='Количество',
         validators=[
-            MinValueValidator(1)
+            MinValueValidator(1),
+            MaxValueValidator(10000)
         ]
     )
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('recipe',)
         verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Игредиенты в рецептах'
         constraints = [
@@ -137,22 +143,29 @@ class RecipeIngredient(models.Model):
         )
 
 
-class Favorite(models.Model):
+class Cart(models.Model):
     user = models.ForeignKey(
         User,
         verbose_name='Пользователь',
         on_delete=models.CASCADE,
-        related_name='favorites'
+        related_name='%(class)ss'
     )
     recipe = models.ForeignKey(
         Recipe,
         verbose_name='Рецепт',
         on_delete=models.CASCADE,
-        related_name='favorites'
+        related_name='%(class)ss'
     )
 
     class Meta:
+        abstract = True
+        default_related_name = '%(class)ss'
         ordering = ('id',)
+
+
+class Favorite(Cart):
+
+    class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
         constraints = [
@@ -166,22 +179,9 @@ class Favorite(models.Model):
         return f'{self.user} добавил {self.recipe} в Избранное'
 
 
-class ShoppingCart(models.Model):
-    user = models.ForeignKey(
-        User,
-        verbose_name='Пользователь',
-        on_delete=models.CASCADE,
-        related_name='shopping_carts'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        verbose_name='Рецепт',
-        on_delete=models.CASCADE,
-        related_name='shopping_carts'
-    )
+class ShoppingCart(Cart):
 
     class Meta:
-        ordering = ('id',)
         verbose_name = 'Корзина'
         verbose_name_plural = 'Корзина'
         constraints = [

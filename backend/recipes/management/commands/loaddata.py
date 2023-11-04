@@ -9,9 +9,11 @@ from recipes.models import Ingredient
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
-        with open(f'{settings.BASE_DIR}/ingredients.csv',
-                  'r',
-                  encoding='utf-8') as file:
+        with open(
+            f'{settings.BASE_DIR}/ingredients.csv',
+            'r',
+            encoding='utf-8'
+        ) as file:
             reader = csv.reader(file)
             for row in reader:
                 Ingredient.objects.create(
