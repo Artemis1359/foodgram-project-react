@@ -4,7 +4,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 
 from api.permissions import IsAuthorOrReadOnly
@@ -53,7 +53,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def get_serializer_class(self):
-        if self.action in ('list', 'retrieve'):
+        if self.request.method in SAFE_METHODS:
             return RecipeListSerializer
         return RecipeSerializer
 
@@ -63,25 +63,30 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     @action(
-        methods=('post', 'delete'),
+        methods=('post',),
         detail=True)
     def shopping_cart(self, request, pk):
-        if request.method == 'POST':
-            return self.add_to(
-                ShoppingCart,
-                ShoppingCartSerializer,
-                request, pk)
+        return self.add_to(
+            ShoppingCart,
+            ShoppingCartSerializer,
+            request, pk)
+
+    @shopping_cart.mapping.delete
+    def delete_shopping_cart(self, request, pk):
         return self.delete_from(ShoppingCart, request, pk)
 
     @action(
-        methods=('post', 'delete'),
+        methods=('post',),
         detail=True)
     def favorite(self, request, pk):
-        if request.method == 'POST':
-            return self.add_to(Favorite, FavoriteSerializer, request, pk)
+        return self.add_to(Favorite, FavoriteSerializer, request, pk)
+
+    @favorite.mapping.delete
+    def delete_favorite(self, request, pk):
         return self.delete_from(Favorite, request, pk)
 
-    def add_to(self, model, model_serializer, request, pk):
+    @staticmethod
+    def add_to(model, model_serializer, request, pk):
         recipe = get_object_or_404(Recipe, id=pk)
         serializer = model_serializer(
             data={'user': request.user.id, 'recipe': pk},
@@ -102,7 +107,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    def delete_from(self, model, request, pk):
+    @staticmethod
+    def delete_from(model, request, pk):
         recipe = get_object_or_404(Recipe, id=pk)
         obj = model.objects.filter(
             user=request.user,
@@ -140,24 +146,28 @@ class FollowViewSet(UserViewSet):
     permission_classes = (IsAuthorOrReadOnly,)
 
     @action(
-        methods=('post', 'delete'),
+        methods=('post',),
         detail=True)
     def subscribe(self, request, id):
         user = self.request.user
         following = get_object_or_404(User, id=id)
-        if request.method == 'POST':
-            serializer = FollowSerializer(data={
-                'user': user.id,
-                'following': following.id
-            },
-                context={'request': request}
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(
-                serializer.data,
-                status=status.HTTP_201_CREATED
-            )
+        serializer = FollowSerializer(data={
+            'user': user.id,
+            'following': following.id
+        },
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+
+    @subscribe.mapping.delete
+    def delete_favorite(self, request, id):
+        user = self.request.user
+        following = get_object_or_404(User, id=id)
         subscription = get_object_or_404(Follow,
                                          user=user,
                                          following=following)
