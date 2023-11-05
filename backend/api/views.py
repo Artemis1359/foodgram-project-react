@@ -7,12 +7,12 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from api.permissions import IsAdminOrAuthorOrReadOnly
+from api.permissions import IsAuthorOrReadOnly
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Follow, User
 
-from .download_txt import create_txt
+from .utils import create_txt
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import LimitPageNumberPagination
 from .serializers import (FavoriteSerializer, FollowListSerializer,
@@ -45,7 +45,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     queryset = Recipe.objects.all()
     pagination_class = LimitPageNumberPagination
-    permission_classes = (IsAdminOrAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
@@ -56,6 +56,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.action in ('list', 'retrieve'):
             return RecipeListSerializer
         return RecipeSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            self.permission_classes = (AllowAny,)
+        return super().get_permissions()
 
     @action(
         methods=('post', 'delete'),
@@ -132,7 +137,7 @@ class FollowViewSet(UserViewSet):
     """Вьюсет для класса Follow."""
 
     pagination_class = LimitPageNumberPagination
-    permission_classes = (IsAdminOrAuthorOrReadOnly,)
+    permission_classes = (IsAuthorOrReadOnly,)
 
     @action(
         methods=('post', 'delete'),

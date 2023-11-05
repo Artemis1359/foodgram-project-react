@@ -43,10 +43,9 @@ class UserSerializer(UserSerializer):
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
-        user = request.user
-        if not request or user.is_anonymous:
+        if not request or request.user.is_anonymous:
             return False
-        return obj.following.filter(user=user, following=obj).exists()
+        return obj.following.filter(user=request.user, following=obj).exists()
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -171,19 +170,19 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         tags = data.get('tags')
-        ingredients = data.get('ingredients')
-        if not ingredients:
+        ingredients_data = data.get('ingredients')
+        if not ingredients_data:
             raise ValidationError('Нужен хотя бы 1 ингредиент')
         if not tags:
             raise ValidationError('Нужен хотя бы 1 тег')
-        ingredients_list = []
-        for item in ingredients:
+        ingredients = []
+        for item in ingredients_data:
             ingredient = get_object_or_404(Ingredient, id=item['id'])
             if int(item['amount']) <= 0:
                 raise ValidationError(
                     'Количество ингредиента не может быть меньше 1!')
-            ingredients_list.append(ingredient)
-        if len(ingredients_list) > len(set(ingredients_list)):
+            ingredients.append(ingredient)
+        if len(ingredients) > len(set(ingredients)):
             raise ValidationError('Ингредиенты не могут повторяться!')
         if len(tags) > len(set(tags)):
             raise ValidationError('Теги не могут повторяться!')
@@ -213,13 +212,12 @@ class RecipeSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-        super().update(instance, validated_data)
         instance.tags.clear()
         instance.tags.set(tags)
         instance.ingredients.clear()
         RecipeIngredient.objects.filter(recipe=instance).delete()
         self.ingredient_amount(instance, ingredients)
-        return instance
+        return super().update(instance, validated_data)
 
     def to_representation(self, instance):
         return RecipeListSerializer(instance,

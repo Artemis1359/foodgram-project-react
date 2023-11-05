@@ -161,6 +161,12 @@ class Cart(models.Model):
         abstract = True
         default_related_name = '%(class)ss'
         ordering = ('id',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=('user', 'recipe'),
+                name='unique_"%(class)s"_fields'
+            )
+        ]
 
 
 class Favorite(Cart):
@@ -168,12 +174,6 @@ class Favorite(Cart):
     class Meta:
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_favorite_fields'
-            )
-        ]
 
     def __str__(self):
         return f'{self.user} добавил {self.recipe} в Избранное'
@@ -184,12 +184,6 @@ class ShoppingCart(Cart):
     class Meta:
         verbose_name = 'Корзина'
         verbose_name_plural = 'Корзина'
-        constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'recipe'),
-                name='unique_shopping_cart_fields'
-            )
-        ]
 
     def __str__(self):
         return f'{self.user} добавил {self.recipe} в Корзину покупок'
