@@ -1,4 +1,5 @@
 from django.db.models import Sum
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet
@@ -136,7 +137,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 'ingredient__name'
             ).annotate(amount=Sum('amount'))
         )
-        return create_txt(shopping_cart)
+        shopping_list = create_txt(shopping_cart)
+        filename = 'shopping_list.txt'
+        response = HttpResponse(
+            shopping_list, content_type='text.txt; charset=utf-8'
+        )
+        response['Content-Disposition'] = f'attachment; filename={filename}'
+        return 
 
 
 class FollowViewSet(UserViewSet):
