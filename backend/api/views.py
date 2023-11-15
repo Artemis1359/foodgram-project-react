@@ -150,7 +150,7 @@ class FollowViewSet(UserViewSet):
     """Вьюсет для класса Follow."""
 
     pagination_class = LimitPageNumberPagination
-    
+
     @action(
         methods=('post',),
         detail=True)
