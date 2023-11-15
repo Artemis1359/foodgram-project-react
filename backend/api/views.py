@@ -44,7 +44,7 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     """ Вьюсет для класса Recipe."""
 
-    queryset = Recipe.objects.select_related('author')
+    queryset = Recipe.objects.all()
     pagination_class = LimitPageNumberPagination
     permission_classes = (IsAuthorOrReadOnly,)
     filter_backends = (DjangoFilterBackend,)
@@ -150,8 +150,7 @@ class FollowViewSet(UserViewSet):
     """Вьюсет для класса Follow."""
 
     pagination_class = LimitPageNumberPagination
-    permission_classes = (IsAuthorOrReadOnly,)
-
+    
     @action(
         methods=('post',),
         detail=True)
@@ -172,7 +171,7 @@ class FollowViewSet(UserViewSet):
         )
 
     @subscribe.mapping.delete
-    def delete_favorite(self, request, id):
+    def delete_subscribe(self, request, id):
         user = self.request.user
         following = get_object_or_404(User, id=id)
         subscription = get_object_or_404(Follow,
